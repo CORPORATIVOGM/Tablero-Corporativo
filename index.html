@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Tareas Laboral</title>
+<style>
+  :root{
+    --gris:#808284;
+    --lima:#CFDC27;
+    --oliva:#AAB720;
+    --bg:#f4f4f5;
+    --card:#ffffff;
+    --texto:#2b2b2d;
+    --borde:#e3e3e5;
+    --rojo:#c0392b;
+    --rojo-bg:#fbdcdb;
+    --morado:#7d4fb0;
+    --morado-bg:#e9dcf7;
+    --verde:#3f8f3f;
+    --verde-bg:#dcf3dc;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--texto);
+  }
+  header{
+    background:linear-gradient(135deg,#3a3a3c,var(--gris));
+    color:#fff;
+    padding:22px 28px;
+  }
+  header h1{margin:0; font-size:1.4rem; font-weight:700; letter-spacing:.3px;}
+  header .sub{margin-top:4px; font-size:.85rem; opacity:.85;}
+  .wrap{max-width:1240px; margin:0 auto; padding:20px 20px 60px;}
+
+  /* ---- Panel de carga de archivo ---- */
+  .upload-bar{
+    background:var(--card);
+    border:1px solid var(--borde);
+    border-radius:12px;
+    padding:14px 18px;
+    margin-bottom:18px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .upload-bar .label{font-size:.8rem; color:var(--gris); font-weight:600;}
+  .upload-bar input[type=file]{font-size:.82rem; max-width:260px;}
+  .btn{
+    border:none; border-radius:8px; padding:9px 16px; font-size:.85rem;
+    font-weight:600; cursor:pointer; background:var(--oliva); color:#fff;
+    transition:background .15s ease;
+  }
+  .btn:hover{background:var(--lima); color:#2b2b2d;}
+  .btn:disabled{background:#c9c9c9; cursor:not-allowed;}
+  .btn-ghost{
+    background:#fff; color:var(--gris); border:1px solid var(--borde);
+  }
+  .btn-ghost:hover{background:#f2f2ee; color:var(--texto);}
+  .upload-status{font-size:.78rem; color:var(--gris);}
+  .upload-status.ok{color:#4c7a2a; font-weight:600;}
+  .upload-status.err{color:#b3261e; font-weight:600;}
+  .last-updated{
+    flex-basis:100%;
+    font-size:.75rem;
+    color:var(--gris);
+    margin-top:2px;
+  }
+
+  /* ---- Filtros multi-select ---- */
+  .filters{
+    background:var(--card);
+    border:1px solid var(--borde);
+    border-radius:12px;
+    padding:16px 18px;
+    margin-bottom:18px;
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    align-items:flex-start;
+  }
+  .filter-field{
+    display:flex; flex-direction:column; gap:5px;
+    min-width:220px; flex:1; position:relative;
+  }
+  .filter-field > label{
+    font-size:.72rem; text-transform:uppercase; letter-spacing:.4px;
+    color:var(--gris); font-weight:700;
+  }
+  .ms-btn{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 10px; border-radius:8px; border:1px solid var(--borde);
+    font-size:.87rem; background:#fafafa; color:var(--texto); cursor:pointer;
+    width:100%; text-align:left;
+  }
+  .ms-btn:hover{border-color:var(--oliva);}
+  .ms-btn .chev{font-size:.7rem; color:var(--gris); margin-left:8px;}
+  .ms-btn .ms-badge{
+    background:var(--oliva); color:#fff; border-radius:10px; font-size:.68rem;
+    padding:1px 7px; margin-left:6px; font-weight:700;
+  }
+  .ms-panel{
+    display:none; position:absolute; top:100%; left:0; right:0; margin-top:4px;
+    background:#fff; border:1px solid var(--borde); border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:50; padding:10px;
+    max-height:320px; display:none; flex-direction:column;
+  }
+  .ms-panel.open{display:flex;}
+  .ms-search{
+    padding:7px 9px; border-radius:6px; border:1px solid var(--borde);
+    font-size:.82rem; margin-bottom:8px;
+  }
+  .ms-options{overflow-y:auto; flex:1; padding-right:2px;}
+  .ms-option{
+    display:flex; align-items:center; gap:8px; padding:5px 4px; font-size:.83rem;
+    border-radius:5px; cursor:pointer;
+  }
+  .ms-option:hover{background:#f4f6e6;}
+  .ms-option input{accent-color:var(--oliva); cursor:pointer;}
+  .ms-actions{
+    display:flex; justify-content:space-between; gap:8px; margin-top:8px;
+    padding-top:8px; border-top:1px solid var(--borde);
+  }
+  .ms-actions button{
+    background:none; border:none; font-size:.76rem; color:var(--oliva);
+    font-weight:700; cursor:pointer; padding:2px 4px;
+  }
+  .ms-actions button:hover{text-decoration:underline;}
+  .ms-empty{font-size:.8rem; color:var(--gris); padding:6px 4px;}
+  .reset-wrap{display:flex; flex-direction:column; gap:5px;}
+  .reset-wrap > label{
+    font-size:.72rem; color:transparent; user-select:none;
+  }
+
+  .total-count{font-size:.78rem; color:var(--gris); margin:-8px 0 18px 2px;}
+  .total-count b{color:var(--texto);}
+
+  /* ---- Tarjetas indicadores (Total / Vencidas / Pendiente / Suspendidas / En revisión) ---- */
+  .cards{display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:22px;}
+  .card{
+    background:var(--card); border:1px solid var(--borde); border-radius:14px;
+    padding:18px 12px; text-align:center; border-top:4px solid var(--gris);
+    cursor:pointer; transition:box-shadow .15s ease, transform .1s ease;
+    user-select:none;
+  }
+  .card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);}
+  .card.active{box-shadow:inset 0 0 0 2px currentColor; background:#fbfbf7;}
+  .card.no-toggle{cursor:pointer;}
+  .card-total{border-top-color:var(--gris);}
+  .card-vencidas{border-top-color:var(--rojo); color:var(--rojo);}
+  .card-pendientes{border-top-color:var(--lima); color:#6b7412;}
+  .card-suspendidas{border-top-color:var(--gris); color:var(--gris);}
+  .card-subtareas{border-top-color:var(--oliva); color:var(--oliva);}
+  .card .num{font-size:2.1rem; font-weight:800; color:var(--texto); line-height:1.1;}
+  .card.active .num{color:inherit;}
+  .card .lbl{margin-top:6px; font-size:.74rem; letter-spacing:.5px; text-transform:uppercase; color:var(--gris); font-weight:700;}
+  .card.active .lbl{color:inherit;}
+
+  /* ---- Secciones resumen ---- */
+  .panels{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;}
+  .panel{background:var(--card); border:1px solid var(--borde); border-radius:14px; padding:18px 20px;}
+  .panel h2{
+    margin:0 0 4px; font-size:.85rem; text-transform:uppercase; letter-spacing:.5px;
+    color:var(--texto); font-weight:800; border-bottom:2px solid var(--lima); padding-bottom:8px;
+  }
+  .panel-legend{display:flex; gap:14px; flex-wrap:wrap; margin:10px 0 8px; font-size:.72rem; color:var(--gris);}
+  .panel-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .sw{width:10px; height:10px; border-radius:3px; display:inline-block;}
+  .sw-venc{background:var(--rojo);}
+  .sw-pend{background:var(--verde);}
+  .sw-susp{background:var(--gris);}
+
+  .bar-row{display:flex; align-items:center; gap:10px; padding:6px 4px; font-size:.85rem; border-radius:6px;}
+  .bar-row.clickable{cursor:pointer;}
+  .bar-row.clickable:hover{background:#f4f6e6;}
+  .bar-row.active{background:#eef3cf; box-shadow:inset 0 0 0 1px var(--oliva);}
+  .bar-row.active .bname{font-weight:700; color:#4a5210;}
+  .bar-row .bname{
+    flex:0 0 42%; max-width:42%; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap; color:var(--texto);
+  }
+  .bar-row .btrack{flex:1; background:#eeeeee; border-radius:6px; height:10px; overflow:hidden; position:relative;}
+  .bar-row .bfill{height:100%; background:linear-gradient(90deg,var(--oliva),var(--lima)); border-radius:6px;}
+  .bar-row .bfill-stack{display:flex; height:100%; border-radius:6px; overflow:hidden;}
+  .seg-venc{background:var(--rojo);}
+  .seg-pend{background:var(--verde);}
+  .seg-susp{background:var(--gris);}
+  .bar-row .bval{flex:0 0 34px; text-align:right; font-weight:700; color:var(--texto); font-size:.82rem;}
+  .empty-msg{color:var(--gris); font-size:.85rem; padding:10px 0;}
+  .scroll-panel{max-height:340px; overflow-y:auto; padding-right:4px;}
+
+  /* ---- Glosario de colores (tabla) ---- */
+  .legend-colors{
+    display:flex; gap:18px; flex-wrap:wrap; margin:0 0 14px; font-size:.78rem; color:var(--texto);
+  }
+  .legend-colors span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:12px; height:12px; border-radius:50%; display:inline-block;}
+  .dot-red{background:var(--rojo);}
+  .dot-purple{background:var(--morado);}
+
+  /* ---- Tabla ---- */
+  .table-panel{background:var(--card); border:1px solid var(--borde); border-radius:14px; padding:18px 20px 4px;}
+  .table-panel h2{
+    margin:0 0 12px; font-size:.85rem; text-transform:uppercase; letter-spacing:.5px;
+    color:var(--texto); font-weight:800; border-bottom:2px solid var(--lima); padding-bottom:8px;
+  }
+  .table-scroll{max-height:520px; overflow-y:auto; border:1px solid var(--borde); border-radius:10px;}
+  table{width:100%; border-collapse:collapse; font-size:.83rem; table-layout:fixed;}
+  thead th{
+    position:sticky; top:0; background:var(--gris); color:#fff; text-align:left;
+    padding:10px 12px; font-weight:700; font-size:.74rem; text-transform:uppercase;
+    letter-spacing:.3px; cursor:pointer; user-select:none; white-space:nowrap; z-index:2;
+    overflow:hidden; text-overflow:ellipsis;
+  }
+  thead th.sortable:hover{background:#6f7072;}
+  thead th .arrow{font-size:.7rem; margin-left:4px; opacity:.8;}
+  tbody td{padding:9px 12px; border-top:1px solid var(--borde); color:var(--texto); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  td.wrap-cell{white-space:normal; word-break:break-word; overflow:visible; text-overflow:clip;}
+  td.desc-cell{white-space:normal; color:#55555a; font-size:.8rem; line-height:1.35; word-break:break-word;}
+  tbody tr{background:#fff;}
+  tbody tr:nth-child(even){background:#fbfbfb;}
+  tbody tr.row-vencida td{background:var(--rojo-bg); box-shadow:inset 4px 0 0 var(--rojo);}
+  tbody tr.row-suspendida td{background:var(--morado-bg); box-shadow:inset 4px 0 0 var(--morado);}
+  .estado-pill{
+    display:inline-block; padding:3px 9px; border-radius:12px; font-size:.72rem;
+    font-weight:700; text-transform:uppercase; letter-spacing:.2px; white-space:nowrap;
+    background:#eaeaea; color:#4a4a4c;
+  }
+  .row-count{padding:10px 2px 14px; font-size:.78rem; color:var(--gris);}
+  footer{text-align:center; color:var(--gris); font-size:.72rem; padding:20px;}
+
+  @media (max-width: 860px){
+    .panels{grid-template-columns:1fr;}
+    .cards{grid-template-columns:repeat(2,1fr);}
+    .filter-field{min-width:100%;}
+    table{table-layout:auto;}
+    tbody td, thead th{white-space:normal;}
+    td.desc-cell{max-width:180px;}
+  }
+
+  /* ==========================================================
+     NAVEGACIÓN ENTRE VISTAS (Dashboard / Agenda)
+     ========================================================== */
+  .view-tabs{
+    display:flex; gap:8px; margin-bottom:18px;
+  }
+  .view-tab{
+    border:1px solid var(--borde); background:var(--card); color:var(--gris);
+    padding:9px 20px; border-radius:10px; font-size:.85rem; font-weight:700;
+    cursor:pointer; letter-spacing:.2px; transition:all .15s ease;
+  }
+  .view-tab:hover{border-color:var(--oliva); color:var(--texto);}
+  .view-tab.active{background:var(--oliva); border-color:var(--oliva); color:#fff;}
+
+  /* ==========================================================
+     AGENDA
+     ========================================================== */
+  .agenda-toolbar{
+    background:var(--card); border:1px solid var(--borde); border-radius:12px;
+    padding:14px 18px; margin-bottom:18px; display:flex; align-items:center;
+    gap:12px; flex-wrap:wrap;
+  }
+  .agenda-toolbar label{font-size:.72rem; text-transform:uppercase; letter-spacing:.4px; color:var(--gris); font-weight:700;}
+  .agenda-select{
+    padding:9px 12px; border-radius:8px; border:1px solid var(--borde);
+    font-size:.87rem; background:#fafafa; color:var(--texto); min-width:260px;
+  }
+  .agenda-count{font-size:.78rem; color:var(--gris); margin-left:auto;}
+  .agenda-empty-state{
+    background:var(--card); border:1px dashed var(--borde); border-radius:12px;
+    padding:40px 20px; text-align:center; color:var(--gris); font-size:.9rem;
+  }
+  .agenda-block{margin-bottom:26px;}
+  .agenda-block-title{
+    font-size:.85rem; text-transform:uppercase; letter-spacing:.5px; font-weight:800;
+    color:var(--texto); margin:0 0 10px; padding-bottom:8px; border-bottom:2px solid var(--lima);
+    display:flex; align-items:center; gap:10px;
+  }
+  .agenda-block-title .sub-hint{font-size:.7rem; text-transform:none; letter-spacing:0; color:var(--gris); font-weight:500;}
+  .agenda-board{
+    display:grid; gap:10px; overflow-x:auto; padding-bottom:6px;
+    grid-auto-flow:column; grid-auto-columns:minmax(190px,1fr);
+  }
+  .agenda-col{
+    background:var(--card); border:1px solid var(--borde); border-radius:12px;
+    display:flex; flex-direction:column; min-height:160px; overflow:hidden;
+  }
+  .agenda-col-head{
+    padding:10px 12px; border-bottom:1px solid var(--borde); background:#fafafa;
+    text-align:center;
+  }
+  .agenda-col-head .ach-label{font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--texto);}
+  .agenda-col-head .ach-date{font-size:.68rem; color:var(--gris); margin-top:2px; text-transform:capitalize;}
+  .agenda-col.is-atrasadas .agenda-col-head{background:var(--rojo-bg);}
+  .agenda-col.is-revision .agenda-col-head{background:#fdf6d8;}
+  .agenda-col-body{padding:8px; display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:420px; flex:1;}
+  .agenda-col-count{
+    font-size:.68rem; color:#fff; background:var(--gris); border-radius:10px;
+    padding:0 7px; font-weight:700; display:inline-block; margin-left:4px;
+  }
+  .task-chip{
+    background:#fff; border:1px solid var(--borde); border-radius:8px; padding:8px 9px;
+    font-size:.76rem; line-height:1.35; color:var(--texto); box-shadow:inset 3px 0 0 var(--gris);
+  }
+  .task-chip.tc-vencida{box-shadow:inset 3px 0 0 var(--rojo); background:var(--rojo-bg);}
+  .task-chip.tc-reunion{box-shadow:inset 3px 0 0 #2f6fd6; background:#e2ecfb;}
+  .task-chip .tc-badges{display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;}
+  .task-chip .tc-badge{
+    font-size:.6rem; font-weight:800; text-transform:uppercase; letter-spacing:.3px;
+    padding:1px 6px; border-radius:8px; color:#fff;
+  }
+  .tc-badge.b-vencida{background:var(--rojo);}
+  .tc-badge.b-reunion{background:#2f6fd6;}
+  .task-chip .tc-text{word-break:break-word;}
+  .agenda-col-empty{color:var(--gris); font-size:.76rem; text-align:center; padding:16px 6px;}
+
+  @media (max-width: 860px){
+    .agenda-select{min-width:100%;}
+    .agenda-count{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Dashboard de Tareas Laboral</h1>
+  <div class="sub">Visualización de todas las tareas de "2026 CUADRO DE TAREAS CORPORATIVO.xlsx" (incluye cerradas y vencidas) · Los datos se actualizan únicamente con el archivo que cargues abajo</div>
+</header>
+
+<div class="wrap">
+
+  <!-- Conexión automática con el Excel en SharePoint / OneDrive empresarial -->
+  <div class="upload-bar" id="graphBar">
+    <span class="label">Sincronización automática:</span>
+    <button class="btn" id="btnConectar">Conectar con Microsoft 365</button>
+    <span class="upload-status" id="graphStatus">No conectado. Los datos se cargan manualmente abajo mientras tanto.</span>
+  </div>
+
+  <!-- Carga / actualización de archivo (compartida entre Dashboard y Agenda) -->
+  <div class="upload-bar">
+    <span class="label">Actualizar datos manualmente (respaldo):</span>
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    <button class="btn" id="btnActualizar">Cargar y actualizar</button>
+    <button class="btn btn-ghost" id="btnGuardar" disabled title="Carga un archivo primero">Guardar HTML actualizado</button>
+    <span class="upload-status" id="uploadStatus"></span>
+    <div class="last-updated" id="lastUpdated"></div>
+  </div>
+
+  <!-- Navegación entre vistas -->
+  <div class="view-tabs">
+    <button class="view-tab active" id="tabDashboard" type="button">Dashboard</button>
+    <button class="view-tab" id="tabAgenda" type="button">Agenda</button>
+  </div>
+
+  <div id="viewDashboard">
+
+  <!-- Filtros -->
+  <div class="filters">
+    <div class="filter-field" id="wrapCliente">
+      <label>Cliente</label>
+      <button class="ms-btn" id="btnCliente" type="button">
+        <span id="lblCliente">Todos</span><span class="chev">▾</span>
+      </button>
+      <div class="ms-panel" id="panelCliente">
+        <input class="ms-search" placeholder="Buscar cliente...">
+        <div class="ms-options"></div>
+        <div class="ms-actions">
+          <button data-action="all">Seleccionar todos</button>
+          <button data-action="none">Limpiar</button>
+        </div>
+      </div>
+    </div>
+    <div class="filter-field" id="wrapResponsable">
+      <label>Abogado Responsable</label>
+      <button class="ms-btn" id="btnResponsable" type="button">
+        <span id="lblResponsable">Todos</span><span class="chev">▾</span>
+      </button>
+      <div class="ms-panel" id="panelResponsable">
+        <input class="ms-search" placeholder="Buscar abogado...">
+        <div class="ms-options"></div>
+        <div class="ms-actions">
+          <button data-action="all">Seleccionar todos</button>
+          <button data-action="none">Limpiar</button>
+        </div>
+      </div>
+    </div>
+    <div class="filter-field" id="wrapTipo">
+      <label>Tipo de tarea</label>
+      <button class="ms-btn" id="btnTipo" type="button">
+        <span id="lblTipo">Todos</span><span class="chev">▾</span>
+      </button>
+      <div class="ms-panel" id="panelTipo">
+        <input class="ms-search" placeholder="Buscar tipo...">
+        <div class="ms-options"></div>
+        <div class="ms-actions">
+          <button data-action="all">Seleccionar todos</button>
+          <button data-action="none">Limpiar</button>
+        </div>
+      </div>
+    </div>
+    <div class="filter-field" id="wrapAnio">
+      <label>Año</label>
+      <button class="ms-btn" id="btnAnio" type="button">
+        <span id="lblAnio">Todos</span><span class="chev">▾</span>
+      </button>
+      <div class="ms-panel" id="panelAnio">
+        <input class="ms-search" placeholder="Buscar año...">
+        <div class="ms-options"></div>
+        <div class="ms-actions">
+          <button data-action="all">Seleccionar todos</button>
+          <button data-action="none">Limpiar</button>
+        </div>
+      </div>
+    </div>
+    <div class="filter-field" id="wrapMes">
+      <label>Mes</label>
+      <button class="ms-btn" id="btnMes" type="button">
+        <span id="lblMes">Todos</span><span class="chev">▾</span>
+      </button>
+      <div class="ms-panel" id="panelMes">
+        <input class="ms-search" placeholder="Buscar mes...">
+        <div class="ms-options"></div>
+        <div class="ms-actions">
+          <button data-action="all">Seleccionar todos</button>
+          <button data-action="none">Limpiar</button>
+        </div>
+      </div>
+    </div>
+    <div class="filter-field" id="wrapEstado">
+      <label>Estado</label>
+      <button class="ms-btn" id="btnEstado" type="button">
+        <span id="lblEstado">Todos</span><span class="chev">▾</span>
+      </button>
+      <div class="ms-panel" id="panelEstado">
+        <input class="ms-search" placeholder="Buscar estado...">
+        <div class="ms-options"></div>
+        <div class="ms-actions">
+          <button data-action="all">Seleccionar todos</button>
+          <button data-action="none">Limpiar</button>
+        </div>
+      </div>
+    </div>
+    <div class="reset-wrap">
+      <label>reset</label>
+      <button class="btn btn-ghost" id="btnReset">Limpiar filtros</button>
+    </div>
+  </div>
+
+  <div class="total-count">Tareas activas visibles: <b id="totalCount">0</b></div>
+
+  <!-- Indicadores -->
+  <div class="cards">
+    <div class="card card-total" id="cardBoxTotal" title="Clic para quitar filtros de estado">
+      <div class="num" id="cardTotal">0</div><div class="lbl">Total</div>
+    </div>
+    <div class="card card-vencidas" id="cardBoxVencidas" title="Clic para filtrar por vencidas">
+      <div class="num" id="cardVencidas">0</div><div class="lbl">Vencidas</div>
+    </div>
+    <div class="card card-pendientes" id="cardBoxPendientes" title="Clic para filtrar por pendientes">
+      <div class="num" id="cardPendientes">0</div><div class="lbl">Pendiente</div>
+    </div>
+    <div class="card card-suspendidas" id="cardBoxSuspendidas" title="Clic para filtrar por suspendidas">
+      <div class="num" id="cardSuspendidas">0</div><div class="lbl">Suspendidas</div>
+    </div>
+    <div class="card card-subtareas" id="cardBoxSubtareas" title="Clic para filtrar por subtareas">
+      <div class="num" id="cardSubtareas">0</div><div class="lbl">Subtareas</div>
+    </div>
+  </div>
+
+  <!-- Resúmenes -->
+  <div class="panels">
+    <div class="panel">
+      <h2>Resumen por tipo de tarea</h2>
+      <div class="scroll-panel" id="resumenTipo"></div>
+    </div>
+    <div class="panel">
+      <h2>Resumen por cliente</h2>
+      <div class="panel-legend">
+        <span><span class="sw sw-venc"></span>Vencidas</span>
+        <span><span class="sw sw-pend"></span>Pendiente</span>
+        <span><span class="sw sw-susp"></span>Suspendidas</span>
+      </div>
+      <div class="scroll-panel" id="resumenCliente"></div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-panel">
+    <h2>Listado de tareas</h2>
+    <div class="legend-colors">
+      <span><span class="dot dot-red"></span>Vencido</span>
+      <span><span class="dot dot-purple"></span>Suspendida por el cliente</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <colgroup>
+          <col style="width:10%">
+          <col style="width:10%">
+          <col style="width:15%">
+          <col style="width:11%">
+          <col style="width:31%">
+          <col style="width:11%">
+          <col style="width:12%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="sortable" id="thIngreso">Fecha ingreso <span class="arrow" id="arrowIngreso"></span></th>
+            <th class="sortable" id="thCompromiso">Fecha compromiso <span class="arrow" id="arrowCompromiso">▲</span></th>
+            <th>Cliente</th>
+            <th>Tipo de tarea</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Abogado Responsable</th>
+          </tr>
+        </thead>
+        <tbody id="tablaBody"></tbody>
+      </table>
+    </div>
+    <div class="row-count" id="rowCount"></div>
+  </div>
+
+  </div><!-- /viewDashboard -->
+
+  <!-- ================== VISTA AGENDA ================== -->
+  <div id="viewAgenda" style="display:none;">
+
+    <div class="agenda-toolbar">
+      <label for="agendaResponsableSelect">Abogado Responsable</label>
+      <select class="agenda-select" id="agendaResponsableSelect">
+        <option value="">Selecciona un abogado…</option>
+      </select>
+      <span class="agenda-count" id="agendaCount"></span>
+    </div>
+
+    <div id="agendaContent">
+      <div class="agenda-empty-state" id="agendaEmptyState">
+        Carga un archivo Excel y selecciona un abogado responsable para ver su agenda.
+      </div>
+
+      <div class="agenda-block" id="blockRevision" style="display:none;">
+        <h3 class="agenda-block-title">Pendientes y calendario <span class="sub-hint">tareas pendientes del abogado seleccionado</span></h3>
+        <div class="agenda-board" id="boardRevision"></div>
+      </div>
+
+      <div class="agenda-block" id="blockSuspendidas" style="display:none;">
+        <h3 class="agenda-block-title">Suspendidas <span class="sub-hint">tareas suspendidas por el cliente</span></h3>
+        <div class="agenda-board" id="boardSuspendidas"></div>
+      </div>
+    </div>
+
+  </div><!-- /viewAgenda -->
+
+  <footer>Dashboard_Tareas_Laboral · generado localmente · los datos no se envían a ningún servidor</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3/lib/msal-browser.min.js"></script>
+<script>
+/* ==========================================================
+   El dashboard NO trae datos precargados del documento original.
+   Todo el contenido se alimenta única y exclusivamente con el
+   archivo Excel que el usuario cargue mediante el botón
+   "Cargar y actualizar". Mientras no se cargue un archivo, el
+   tablero permanece vacío.
+   Fuente: "2026 CUADRO DE TAREAS CORPORATIVO.xlsx", hoja TAREAS 2025.
+   f=FECHA DE INGRESO AL CUADRO, fc=FECHA DE COMPROMISO INTERNO,
+   c=CLIENTE, t=TIPO DE TAREA, ar=ABOGADO RESPONSABLE, d=DESCRIPCIÓN,
+   e=ESTADO, anio/mes=derivados de la fecha de ingreso para los filtros.
+   Este cuadro no tiene columna GESTIÓN: se incluyen TODAS las tareas
+   (incluidas cerradas y vencidas); solo se descartan filas sin CLIENTE.
+   ========================================================== */
+let currentData = [];
+
+/* ---------- estado de la Agenda ---------- */
+let agendaResponsable = '';  // abogado responsable seleccionado en la Agenda
+let agendaIndex = null;      // índices precomputados para evitar recorrer todo el dataset en cada render
+
+/* ---------- última actualización ---------- */
+const MESES_ABR_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function fmtDateTime(d){
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mes = MESES_ABR_ES[d.getMonth()];
+  const yyyy = d.getFullYear();
+  let h = d.getHours();
+  const ampm = h >= 12 ? 'p. m.' : 'a. m.';
+  h = h % 12; if(h === 0) h = 12;
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${dd}-${mes}-${yyyy} ${String(h).padStart(2,'0')}:${mi} ${ampm}`;
+}
+let lastLoadedAt = null;
+function setLastUpdated(d){
+  lastLoadedAt = d;
+  const el = document.getElementById('lastUpdated');
+  if(!el) return;
+  el.textContent = d ? ('Última actualización: ' + fmtDateTime(d)) : 'Aún no se ha cargado ningún archivo.';
+}
+
+const FILTERS_CONFIG = [
+  {key:'cliente', field:'c', label:'Cliente'},
+  {key:'responsable', field:'ar', label:'Abogado Responsable'},
+  {key:'tipo', field:'t', label:'Tipo de tarea'},
+  {key:'anio', field:'anio', label:'Año'},
+  {key:'mes', field:'mes', label:'Mes'},
+  {key:'estado', field:'e', label:'Estado'}
+];
+let filters = {
+  cliente:new Set(), responsable:new Set(), tipo:new Set(),
+  anio:new Set(), mes:new Set(),
+  estado:new Set()        // valores de columna ESTADO (ver lista completa en ESTADOS_VALIDOS)
+};
+/* Catálogo cerrado de valores que puede traer la columna ESTADO,
+   confirmado sobre el archivo real (útil para validar/parametrizar). */
+const ESTADOS_VALIDOS = [
+  'VENCIDA','CANCELADA','PENDIENTE','SUBTAREA ABIERTA','SUSPENDIDA POR CLIENTE',
+  'TERMINADA ANTES DE TIEMPO','TERMINADA VENCIDA','TERMINADA TIEMPO MÍNIMO'
+];
+
+/* ---------- utilidades ---------- */
+function norm(v){
+  if(v === null || v === undefined) return '';
+  return String(v).replace(/\s+/g,' ').trim();
+}
+const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function fmtDate(iso){
+  if(!iso) return '—';
+  const parts = iso.split('-');
+  if(parts.length !== 3) return '—';
+  const [y,m,d] = parts;
+  const mi = parseInt(m,10)-1;
+  const mesNombre = MESES_ES[mi] || m;
+  return `${d}-${mesNombre}-${y}`;
+}
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function uniqueSorted(arr){
+  const map = new Map();
+  arr.forEach(v=>{
+    const n = norm(v);
+    if(!n) return;
+    const k = n.toLowerCase();
+    if(!map.has(k)) map.set(k, n);
+  });
+  return Array.from(map.values()).sort((a,b)=>a.localeCompare(b,'es'));
+}
+function rowClass(r){
+  const e = (r.e||'').toUpperCase();
+  if(e === 'VENCIDA') return 'row-vencida';
+  if(e === 'SUSPENDIDA POR CLIENTE') return 'row-suspendida';
+  return '';
+}
+
+/* ---------- referencias DOM ---------- */
+const totalCountEl = document.getElementById('totalCount');
+const cardTotal = document.getElementById('cardTotal');
+const cardVencidas = document.getElementById('cardVencidas');
+const cardPendientes = document.getElementById('cardPendientes');
+const cardSuspendidas = document.getElementById('cardSuspendidas');
+const cardSubtareas = document.getElementById('cardSubtareas');
+const cardBoxTotal = document.getElementById('cardBoxTotal');
+const cardBoxVencidas = document.getElementById('cardBoxVencidas');
+const cardBoxPendientes = document.getElementById('cardBoxPendientes');
+const cardBoxSuspendidas = document.getElementById('cardBoxSuspendidas');
+const cardBoxSubtareas = document.getElementById('cardBoxSubtareas');
+const resumenTipoEl = document.getElementById('resumenTipo');
+const resumenClienteEl = document.getElementById('resumenCliente');
+const tablaBody = document.getElementById('tablaBody');
+const rowCountEl = document.getElementById('rowCount');
+const thIngreso = document.getElementById('thIngreso');
+const thCompromiso = document.getElementById('thCompromiso');
+const arrowIngreso = document.getElementById('arrowIngreso');
+const arrowCompromiso = document.getElementById('arrowCompromiso');
+const uploadStatus = document.getElementById('uploadStatus');
+
+/* ---------- multi-select genérico ---------- */
+function getOptionsFor(key){
+  let base = currentData;
+  FILTERS_CONFIG.forEach(cfg=>{
+    if(cfg.key !== key && filters[cfg.key].size){
+      base = base.filter(r=> filters[cfg.key].has(norm(r[cfg.field]).toLowerCase()));
+    }
+  });
+  const field = FILTERS_CONFIG.find(c=>c.key===key).field;
+  return uniqueSorted(base.map(r=>r[field]));
+}
+
+function updateButtonLabel(key){
+  const lbl = document.getElementById('lbl'+key.charAt(0).toUpperCase()+key.slice(1));
+  const size = filters[key].size;
+  if(size === 0) lbl.textContent = 'Todos';
+  else if(size === 1) lbl.textContent = Array.from(filters[key])[0].replace(/(^|\s)\S/g,c=>c.toUpperCase());
+  else lbl.textContent = `${size} seleccionados`;
+}
+
+function renderMultiSelectOptions(key){
+  const capKey = key.charAt(0).toUpperCase()+key.slice(1);
+  const panel = document.getElementById('panel'+capKey);
+  const optsContainer = panel.querySelector('.ms-options');
+  const searchInput = panel.querySelector('.ms-search');
+  const options = getOptionsFor(key);
+
+  // podar selecciones que ya no son válidas dado el estado actual de otros filtros
+  const validLower = new Set(options.map(o=>o.toLowerCase()));
+  filters[key] = new Set(Array.from(filters[key]).filter(v=>validLower.has(v)));
+
+  function paint(filterText){
+    optsContainer.innerHTML = '';
+    const ft = (filterText||'').toLowerCase();
+    const filteredOpts = options.filter(o=>o.toLowerCase().includes(ft));
+    if(filteredOpts.length === 0){
+      optsContainer.innerHTML = '<div class="ms-empty">Sin resultados.</div>';
+      return;
+    }
+    filteredOpts.forEach(opt=>{
+      const row = document.createElement('label');
+      row.className = 'ms-option';
+      const checked = filters[key].has(opt.toLowerCase());
+      row.innerHTML = `<input type="checkbox" ${checked?'checked':''}> <span>${escapeHtml(opt)}</span>`;
+      row.querySelector('input').addEventListener('change', (e)=>{
+        if(e.target.checked) filters[key].add(opt.toLowerCase());
+        else filters[key].delete(opt.toLowerCase());
+        onFiltersChanged();
+      });
+      optsContainer.appendChild(row);
+    });
+  }
+  paint(searchInput.value);
+  searchInput.oninput = ()=>paint(searchInput.value);
+
+  updateButtonLabel(key);
+}
+
+function rebuildAllFilterOptions(){
+  FILTERS_CONFIG.forEach(cfg=> renderMultiSelectOptions(cfg.key));
+}
+
+function onFiltersChanged(){
+  rebuildAllFilterOptions();
+  render();
+}
+
+function setupMultiSelect(key){
+  const capKey = key.charAt(0).toUpperCase()+key.slice(1);
+  const btn = document.getElementById('btn'+capKey);
+  const panel = document.getElementById('panel'+capKey);
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const isOpen = panel.classList.contains('open');
+    document.querySelectorAll('.ms-panel.open').forEach(p=>p.classList.remove('open'));
+    if(!isOpen) panel.classList.add('open');
+  });
+  panel.addEventListener('click', e=>e.stopPropagation());
+  panel.querySelector('[data-action="all"]').addEventListener('click', ()=>{
+    getOptionsFor(key).forEach(o=>filters[key].add(o.toLowerCase()));
+    onFiltersChanged();
+  });
+  panel.querySelector('[data-action="none"]').addEventListener('click', ()=>{
+    filters[key].clear();
+    onFiltersChanged();
+  });
+}
+document.addEventListener('click', ()=>{
+  document.querySelectorAll('.ms-panel.open').forEach(p=>p.classList.remove('open'));
+});
+FILTERS_CONFIG.forEach(cfg=>setupMultiSelect(cfg.key));
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  FILTERS_CONFIG.forEach(cfg=>filters[cfg.key].clear());
+  onFiltersChanged();
+});
+
+/* ---------- tarjetas dinámicas (funcionan como filtros, igual que las barras).
+   Usan minúsculas porque el filtro genérico de ESTADO (multi-select) también
+   guarda sus selecciones en minúsculas; así ambos caminos son intercambiables. ---------- */
+function toggleEstado(valor){
+  const v = valor.toLowerCase();
+  if(filters.estado.has(v)) filters.estado.delete(v);
+  else filters.estado.add(v);
+  onFiltersChanged();
+}
+cardBoxTotal.addEventListener('click', ()=>{
+  filters.estado.clear();
+  onFiltersChanged();
+});
+cardBoxVencidas.addEventListener('click', ()=> toggleEstado('VENCIDA'));
+cardBoxPendientes.addEventListener('click', ()=> toggleEstado('PENDIENTE'));
+cardBoxSuspendidas.addEventListener('click', ()=> toggleEstado('SUSPENDIDA POR CLIENTE'));
+cardBoxSubtareas.addEventListener('click', ()=> toggleEstado('SUBTAREA ABIERTA'));
+
+/* ---------- orden de la tabla (por fecha de ingreso o fecha de compromiso) ---------- */
+let sortKey = 'fc';
+let sortAsc = true;
+function setSort(key){
+  if(sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = true; }
+  render();
+}
+thIngreso.addEventListener('click', ()=>setSort('f'));
+thCompromiso.addEventListener('click', ()=>setSort('fc'));
+
+/* ---------- filtrado ---------- */
+function getFiltered(){
+  return currentData.filter(r=>{
+    for(const cfg of FILTERS_CONFIG){
+      if(filters[cfg.key].size && !filters[cfg.key].has(norm(r[cfg.field]).toLowerCase())) return false;
+    }
+    return true;
+  });
+}
+
+/* ---------- render principal ---------- */
+function render(){
+  const filtered = getFiltered();
+  totalCountEl.textContent = filtered.length;
+
+  // Tarjetas: se calculan a partir de la columna ESTADO. Este cuadro incluye
+  // todas las tareas (no hay columna GESTIÓN que excluir).
+  let cVenc = 0, cPend = 0, cSusp = 0, cSub = 0;
+  filtered.forEach(r=>{
+    const e = (r.e||'').toUpperCase();
+    if(e === 'VENCIDA') cVenc++;
+    else if(e === 'PENDIENTE') cPend++;
+    else if(e === 'SUSPENDIDA POR CLIENTE') cSusp++;
+    else if(e === 'SUBTAREA ABIERTA') cSub++;
+  });
+  cardTotal.textContent = filtered.length;
+  cardVencidas.textContent = cVenc;
+  cardPendientes.textContent = cPend;
+  cardSuspendidas.textContent = cSusp;
+  cardSubtareas.textContent = cSub;
+
+  cardBoxVencidas.classList.toggle('active', filters.estado.has('vencida'));
+  cardBoxPendientes.classList.toggle('active', filters.estado.has('pendiente'));
+  cardBoxSuspendidas.classList.toggle('active', filters.estado.has('suspendida por cliente'));
+  cardBoxSubtareas.classList.toggle('active', filters.estado.has('subtarea abierta'));
+  cardBoxTotal.classList.toggle('active', filters.estado.size === 0);
+
+  renderResumenTipo(filtered);
+  renderResumenCliente(filtered);
+  renderTabla(filtered);
+}
+
+function renderBarList(container, entries, filterKey){
+  container.innerHTML = '';
+  if(entries.length === 0){
+    container.innerHTML = '<div class="empty-msg">Sin datos para los filtros seleccionados.</div>';
+    return;
+  }
+  const max = entries[0][1];
+  entries.forEach(([name,count])=>{
+    const row = document.createElement('div');
+    const lower = name.toLowerCase();
+    const isActive = filterKey && filters[filterKey].has(lower);
+    row.className = 'bar-row clickable' + (isActive ? ' active' : '');
+    row.title = 'Clic para filtrar por: ' + name;
+    const pct = max ? Math.round((count/max)*100) : 0;
+    row.innerHTML = `
+      <div class="bname" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+      <div class="btrack"><div class="bfill" style="width:${pct}%"></div></div>
+      <div class="bval">${count}</div>`;
+    if(filterKey){
+      row.addEventListener('click', ()=>{
+        if(filters[filterKey].has(lower)) filters[filterKey].delete(lower);
+        else filters[filterKey].add(lower);
+        onFiltersChanged();
+      });
+    }
+    container.appendChild(row);
+  });
+}
+
+function renderResumenTipo(filtered){
+  const map = new Map();
+  filtered.forEach(r=>{
+    const k = norm(r.t) || '(Sin tipo)';
+    map.set(k, (map.get(k)||0)+1);
+  });
+  const entries = Array.from(map.entries()).sort((a,b)=>b[1]-a[1]);
+  renderBarList(resumenTipoEl, entries, 'tipo');
+}
+
+/* Resumen por cliente: ahora se basa en la columna Z (ESTADO) →
+   Vencidas (rojo) / Pendiente (verde) / Suspendidas (gris).
+   Ya no se muestran subtareas en este panel. */
+function renderResumenCliente(filtered){
+  const map = new Map();
+  filtered.forEach(r=>{
+    const k = norm(r.c) || '(Sin cliente)';
+    if(!map.has(k)) map.set(k, {venc:0, pend:0, susp:0});
+    const o = map.get(k);
+    const e = (r.e||'').toUpperCase();
+    if(e === 'VENCIDA') o.venc++;
+    else if(e === 'PENDIENTE') o.pend++;
+    else if(e === 'SUSPENDIDA POR CLIENTE') o.susp++;
+  });
+  const entries = Array.from(map.entries())
+    .map(([name,o])=>({name, venc:o.venc, pend:o.pend, susp:o.susp, total:o.venc+o.pend+o.susp}))
+    .filter(e=>e.total > 0)
+    .sort((a,b)=>b.total-a.total);
+
+  resumenClienteEl.innerHTML = '';
+  if(entries.length === 0){
+    resumenClienteEl.innerHTML = '<div class="empty-msg">Sin datos para los filtros seleccionados.</div>';
+    return;
+  }
+  const max = entries[0].total || 1;
+  entries.forEach(e=>{
+    const row = document.createElement('div');
+    const lower = e.name.toLowerCase();
+    const isActive = filters.cliente.has(lower);
+    row.className = 'bar-row clickable' + (isActive ? ' active' : '');
+    row.title = 'Clic para filtrar por: ' + e.name;
+    const pctTotal = Math.round((e.total/max)*100);
+    row.innerHTML = `
+      <div class="bname" title="${escapeHtml(e.name)}">${escapeHtml(e.name)}</div>
+      <div class="btrack">
+        <div class="bfill-stack" style="width:${pctTotal}%">
+          <div class="seg-venc" style="flex:${e.venc||0}" title="Vencidas: ${e.venc}"></div>
+          <div class="seg-pend" style="flex:${e.pend||0}" title="Pendiente: ${e.pend}"></div>
+          <div class="seg-susp" style="flex:${e.susp||0}" title="Suspendidas: ${e.susp}"></div>
+        </div>
+      </div>
+      <div class="bval">${e.total}</div>`;
+    row.addEventListener('click', ()=>{
+      if(filters.cliente.has(lower)) filters.cliente.delete(lower);
+      else filters.cliente.add(lower);
+      onFiltersChanged();
+    });
+    resumenClienteEl.appendChild(row);
+  });
+}
+
+function renderTabla(filtered){
+  const rows = filtered.slice().sort((a,b)=>{
+    const da = a[sortKey] || '9999-99-99';
+    const db = b[sortKey] || '9999-99-99';
+    if(da < db) return sortAsc ? -1 : 1;
+    if(da > db) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  tablaBody.innerHTML = '';
+  if(rows.length === 0){
+    tablaBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--gris); padding:24px 12px;">
+      ${currentData.length === 0 ? 'Carga un archivo Excel para ver las tareas.' : 'Sin tareas para los filtros seleccionados.'}
+    </td></tr>`;
+  } else {
+    const frag = document.createDocumentFragment();
+    rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      const rc = rowClass(r);
+      if(rc) tr.className = rc;
+      tr.innerHTML = `
+        <td>${fmtDate(r.f)}</td>
+        <td>${fmtDate(r.fc)}</td>
+        <td class="wrap-cell">${escapeHtml(norm(r.c))}</td>
+        <td class="wrap-cell">${escapeHtml(norm(r.t))}</td>
+        <td class="desc-cell">${escapeHtml(norm(r.d)) || '—'}</td>
+        <td class="wrap-cell"><span class="estado-pill">${escapeHtml(norm(r.e)) || '—'}</span></td>
+        <td class="wrap-cell">${escapeHtml(norm(r.ar)) || '—'}</td>`;
+      frag.appendChild(tr);
+    });
+    tablaBody.appendChild(frag);
+  }
+  rowCountEl.textContent = `${rows.length} tarea(s) listada(s)`;
+  arrowIngreso.textContent = sortKey === 'f' ? (sortAsc ? '▲' : '▼') : '';
+  arrowCompromiso.textContent = sortKey === 'fc' ? (sortAsc ? '▲' : '▼') : '';
+}
+
+/* ==========================================================
+   AGENDA
+   Reproduce funcionalmente la hoja "AGENDA" del Excel sobre el
+   MISMO dataset (currentData) cargado por el Dashboard. No lee
+   el archivo por separado ni usa datos hardcodeados.
+   ========================================================== */
+const DIAS_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+function todayISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function addDaysISO(iso, n){
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate()+n);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+function fmtDiaCorto(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return `${DIAS_ES[dt.getDay()]} ${String(d).padStart(2,'0')}-${MESES_ABR_ES[m-1]}`;
+}
+
+/* Índices precomputados una sola vez por carga de datos, para no recorrer
+   currentData en cada una de las 6 columnas de la Agenda ni en cada
+   cambio de abogado seleccionado.
+   Este cuadro no tiene columna GESTIÓN: "pendiente"/"suspendida" se toman
+   directamente de la columna ESTADO (PENDIENTE / SUSPENDIDA POR CLIENTE). */
+function buildAgendaIndex(){
+  const byResponsablePendiente = new Map();
+  const byResponsableSuspendida = new Map();
+  const responsableSet = new Set();
+
+  currentData.forEach(r=>{
+    const responsableNorm = norm(r.ar);
+    const responsableKey = responsableNorm.toLowerCase();
+    if(responsableNorm) responsableSet.add(responsableNorm);
+    if(!responsableKey) return;
+
+    const e = (r.e||'').toUpperCase();
+    if(e === 'PENDIENTE'){
+      if(!byResponsablePendiente.has(responsableKey)) byResponsablePendiente.set(responsableKey, []);
+      byResponsablePendiente.get(responsableKey).push(r);
+    } else if(e === 'SUSPENDIDA POR CLIENTE'){
+      if(!byResponsableSuspendida.has(responsableKey)) byResponsableSuspendida.set(responsableKey, []);
+      byResponsableSuspendida.get(responsableKey).push(r);
+    }
+  });
+
+  agendaIndex = {
+    byResponsablePendiente, byResponsableSuspendida,
+    responsables: uniqueSorted(Array.from(responsableSet))
+  };
+}
+
+function populateAgendaResponsableOptions(){
+  const sel = document.getElementById('agendaResponsableSelect');
+  if(!sel) return;
+  const opts = agendaIndex ? agendaIndex.responsables : [];
+  const prevValue = agendaResponsable;
+  sel.innerHTML = '<option value="">Selecciona un abogado…</option>' +
+    opts.map(o=>`<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+  if(prevValue && opts.includes(prevValue)){
+    agendaResponsable = prevValue;
+  } else if(opts.length){
+    agendaResponsable = opts[0];
+  } else {
+    agendaResponsable = '';
+  }
+  sel.value = agendaResponsable;
+}
+
+/* Tarjeta visual de una tarea. Color principal según prioridad
+   Vencida > Reunión; se conservan las demás condiciones
+   como badges secundarios (no se pierde información). */
+function taskChipHtml(r){
+  let primary = '';
+  if(r.vz) primary = 'tc-vencida';
+  else if(r.rn) primary = 'tc-reunion';
+  const badges = [];
+  if(r.vz) badges.push('<span class="tc-badge b-vencida">Vencida</span>');
+  if(r.rn) badges.push('<span class="tc-badge b-reunion">Reunión</span>');
+  const texto = r.tx || '(Sin descripción)';
+  return `<div class="task-chip ${primary}">` +
+    (badges.length ? `<div class="tc-badges">${badges.join('')}</div>` : '') +
+    `<div class="tc-text">${escapeHtml(texto)}</div></div>`;
+}
+
+function renderAgendaBoard(container, columns){
+  if(!container) return;
+  container.innerHTML = columns.map(col=>{
+    const tasksHtml = col.tasks.length
+      ? col.tasks.map(taskChipHtml).join('')
+      : '<div class="agenda-col-empty">Sin tareas</div>';
+    return `<div class="agenda-col ${col.extraClass||''}">
+        <div class="agenda-col-head">
+          <div class="ach-label">${escapeHtml(col.label)}<span class="agenda-col-count">${col.tasks.length}</span></div>
+          ${col.dateSubtitle ? `<div class="ach-date">${escapeHtml(col.dateSubtitle)}</div>` : ''}
+        </div>
+        <div class="agenda-col-body">${tasksHtml}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderAgenda(){
+  const emptyState = document.getElementById('agendaEmptyState');
+  const blockPendientes = document.getElementById('blockRevision');
+  const blockSuspendidas = document.getElementById('blockSuspendidas');
+  const agendaCountEl = document.getElementById('agendaCount');
+  if(!emptyState) return; // la vista Agenda aún no está en el DOM
+
+  if(currentData.length === 0 || !agendaResponsable){
+    emptyState.style.display = '';
+    blockPendientes.style.display = 'none';
+    blockSuspendidas.style.display = 'none';
+    agendaCountEl.textContent = '';
+    return;
+  }
+  emptyState.style.display = 'none';
+  blockPendientes.style.display = '';
+  blockSuspendidas.style.display = '';
+
+  const responsableKey = agendaResponsable.toLowerCase();
+  const pendientes = agendaIndex.byResponsablePendiente.get(responsableKey) || [];
+  const suspendidas = agendaIndex.byResponsableSuspendida.get(responsableKey) || [];
+
+  const hoy = todayISO();
+  const dias = [0,1,2,3,4].map(n=>addDaysISO(hoy,n));
+  const labels = ['Hoy','Hoy + 1','Hoy + 2','Hoy + 3','Hoy + 4'];
+
+  const atrasadasPend = pendientes.filter(r=> r.fc && r.fc < hoy);
+  const atrasadasSusp = suspendidas.filter(r=> r.fc && r.fc < hoy);
+  const pendPorDia = dias.map(d=> pendientes.filter(r=> r.fc === d));
+  const suspPorDia = dias.map(d=> suspendidas.filter(r=> r.fc === d));
+
+  const columnasPendientes = [
+    {label:'Atrasadas', tasks: atrasadasPend, extraClass:'is-atrasadas'},
+    ...dias.map((d,i)=>({label:labels[i], dateSubtitle:fmtDiaCorto(d), tasks:pendPorDia[i]}))
+  ];
+  const columnasSuspendidas = [
+    {label:'Atrasadas', tasks: atrasadasSusp, extraClass:'is-atrasadas'},
+    ...dias.map((d,i)=>({label:labels[i], dateSubtitle:fmtDiaCorto(d), tasks:suspPorDia[i]}))
+  ];
+
+  renderAgendaBoard(document.getElementById('boardRevision'), columnasPendientes);
+  renderAgendaBoard(document.getElementById('boardSuspendidas'), columnasSuspendidas);
+
+  const total = pendientes.length + suspendidas.length;
+  agendaCountEl.textContent = `${total} tarea(s) en la agenda de ${agendaResponsable}`;
+}
+
+const agendaResponsableSelect = document.getElementById('agendaResponsableSelect');
+if(agendaResponsableSelect){
+  agendaResponsableSelect.addEventListener('change', (e)=>{
+    agendaResponsable = e.target.value;
+    renderAgenda();
+  });
+}
+
+/* ---------- navegación entre vistas ---------- */
+const tabDashboard = document.getElementById('tabDashboard');
+const tabAgenda = document.getElementById('tabAgenda');
+const viewDashboard = document.getElementById('viewDashboard');
+const viewAgenda = document.getElementById('viewAgenda');
+if(tabDashboard && tabAgenda){
+  tabDashboard.addEventListener('click', ()=>{
+    tabDashboard.classList.add('active');
+    tabAgenda.classList.remove('active');
+    viewDashboard.style.display = '';
+    viewAgenda.style.display = 'none';
+  });
+  tabAgenda.addEventListener('click', ()=>{
+    tabAgenda.classList.add('active');
+    tabDashboard.classList.remove('active');
+    viewAgenda.style.display = '';
+    viewDashboard.style.display = 'none';
+    renderAgenda(); // por si los datos cambiaron mientras se veía el Dashboard
+  });
+}
+
+/* ---------- carga de archivo Excel ---------- */
+const HEADER_MAP = {
+  fecha: ['FECHA DE INGRESO AL CUADRO','FECHA INGRESO','FECHA'],
+  fechaCompromiso: ['FECHA DE COMPROMISO INTERNO'],
+  cliente: ['CLIENTE'],
+  tipoTarea: ['TIPO DE TAREA'],
+  responsable: ['ABOGADO RESPONSABLE','ABOGADO DE APOYO'],
+  descripcion: ['DESCRIPCIÓN','DESCRIPCION'],
+  estado: ['ESTADO'],
+  asunto: ['ASUNTO CORREO']
+};
+/* ABOGADO FIDELIZADOR, ABOGADO REVISIÓN y GESTIÓN ya no aplican para
+   "2026 CUADRO DE TAREAS CORPORATIVO.xlsx" (hoja TAREAS 2025): no existen
+   esas columnas en este archivo, así que no se buscan ni se filtran. */
+
+function findKey(headers, candidates){
+  const upperMap = {};
+  headers.forEach(h=> upperMap[String(h).trim().toUpperCase()] = h);
+  for(const cand of candidates){
+    if(upperMap[cand]) return upperMap[cand];
+  }
+  return null;
+}
+
+function excelDateToISO(val){
+  if(val === null || val === undefined || val === '') return null;
+  if(val instanceof Date){
+    if(isNaN(val.getTime())) return null;
+    const y = val.getFullYear(), m = String(val.getMonth()+1).padStart(2,'0'), d = String(val.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(val).trim();
+  const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m1){
+    let [_, d, m, y] = m1;
+    if(y.length===2) y = '20'+y;
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  const m2 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m2){
+    return `${m2[1]}-${m2[2].padStart(2,'0')}-${m2[3].padStart(2,'0')}`;
+  }
+  return null;
+}
+
+function parseWorkbook(arrayBuffer){
+  const wb = XLSX.read(arrayBuffer, {type:'array', cellDates:true});
+  let sheetName = wb.SheetNames.includes('TAREAS 2025') ? 'TAREAS 2025'
+    : (wb.SheetNames.includes('TAREAS 2026') ? 'TAREAS 2026' : wb.SheetNames[0]);
+  const ws = wb.Sheets[sheetName];
+
+  // IMPORTANTE: el archivo fuente suele declarar un rango de hoja que llega
+  // hasta la última columna posible de Excel (XFD) por formato aplicado a
+  // columnas completas, aunque los datos reales solo ocupan ~29 columnas.
+  // Si no acotamos el rango, el navegador intenta recorrer millones de
+  // celdas vacías y la carga se queda "colgada". Limitamos explícitamente
+  // a la columna AC (cubre hasta la columna TAREA) para que la lectura
+  // sea instantánea sin importar cuántas columnas declare el archivo.
+  const MAX_COL = 28; // columna AC (0-indexada)
+  let range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : {s:{r:0,c:0}, e:{r:100000,c:MAX_COL}};
+  range.e.c = Math.min(range.e.c, MAX_COL);
+  const boundedRange = XLSX.utils.encode_range(range);
+
+  const rows = XLSX.utils.sheet_to_json(ws, {defval:null, raw:true, range: boundedRange});
+  if(rows.length === 0) throw new Error('La hoja seleccionada no contiene datos.');
+
+  const headers = Object.keys(rows[0]);
+  const kFecha = findKey(headers, HEADER_MAP.fecha);
+  const kComp = findKey(headers, HEADER_MAP.fechaCompromiso);
+  const kCliente = findKey(headers, HEADER_MAP.cliente);
+  const kTipo = findKey(headers, HEADER_MAP.tipoTarea);
+  const kResponsable = findKey(headers, HEADER_MAP.responsable);
+  const kDesc = findKey(headers, HEADER_MAP.descripcion);
+  const kEstado = findKey(headers, HEADER_MAP.estado);
+  const kAsunto = findKey(headers, HEADER_MAP.asunto);
+
+  if(!kCliente){
+    throw new Error('No se encontró la columna CLIENTE. Verifica el archivo.');
+  }
+
+  // Este cuadro ya no trae columna GESTIÓN: incluye TODAS las tareas
+  // (incluso cerradas/vencidas). Se descartan únicamente las filas sin
+  // CLIENTE diligenciado (filas en blanco al final de la hoja).
+  const out = [];
+  rows.forEach(row=>{
+    const cliente = norm(row[kCliente]);
+    if(!cliente) return;
+
+    const tipo = norm(row[kTipo]);
+    const desc = kDesc ? norm(row[kDesc]) : '';
+    const asunto = kAsunto ? norm(row[kAsunto]) : '';
+    const estado = kEstado ? norm(row[kEstado]).toUpperCase() : '';
+
+    const tipoUpper = tipo.toUpperCase();
+    const esReunion = tipoUpper === 'REUNIÓN' || tipoUpper === 'REUNION';
+    const esVencida = estado === 'VENCIDA';
+    const texto = [cliente, tipo, desc, asunto].filter(Boolean).join(' - ');
+
+    const fIso = excelDateToISO(row[kFecha]);
+    let anio = '', mes = '';
+    if(fIso){
+      anio = fIso.slice(0,4);
+      const mm = fIso.slice(5,7);
+      const nombreMes = MESES_ES[parseInt(mm,10)-1] || mm;
+      mes = `${mm} - ${nombreMes.charAt(0).toUpperCase()}${nombreMes.slice(1)}`;
+    }
+
+    out.push({
+      f: fIso,
+      fc: excelDateToISO(row[kComp]),
+      c: cliente,
+      t: tipo,
+      ar: norm(row[kResponsable]),
+      d: desc,
+      e: estado,
+      as: asunto,
+      anio: anio,
+      mes: mes,
+      vz: esVencida,
+      rn: esReunion,
+      tx: texto
+    });
+  });
+  return { data: out };
+}
+
+/* Procesa el ArrayBuffer del archivo cargado manualmente y actualiza
+   todo el dashboard. Esta es la ÚNICA vía de actualización de datos. */
+function procesarArrayBuffer(arrayBuffer){
+  const btn = document.getElementById('btnActualizar');
+  try{
+    const data = new Uint8Array(arrayBuffer);
+    const parsedResult = parseWorkbook(data);
+    const parsed = parsedResult.data;
+    if(parsed.length === 0){
+      throw new Error('No se encontraron tareas con CLIENTE diligenciado en el archivo.');
+    }
+    currentData = parsed;
+    FILTERS_CONFIG.forEach(cfg=>filters[cfg.key].clear());
+    rebuildAllFilterOptions();
+    render();
+    buildAgendaIndex();
+    populateAgendaResponsableOptions();
+    renderAgenda();
+    setLastUpdated(new Date());
+    uploadStatus.textContent = `Actualizado: ${parsed.length} tareas activas cargadas.`;
+    uploadStatus.className = 'upload-status ok';
+    const btnGuardar = document.getElementById('btnGuardar');
+    if(btnGuardar){ btnGuardar.disabled = false; btnGuardar.title = 'Descarga el HTML con los datos actuales para compartirlo'; }
+  }catch(err){
+    uploadStatus.textContent = 'Error: ' + err.message;
+    uploadStatus.className = 'upload-status err';
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
+document.getElementById('btnActualizar').addEventListener('click', ()=>{
+  const input = document.getElementById('fileInput');
+  const file = input.files[0];
+  const btn = document.getElementById('btnActualizar');
+  uploadStatus.className = 'upload-status';
+  if(!file){
+    uploadStatus.textContent = 'Selecciona un archivo primero.';
+    uploadStatus.classList.add('err');
+    return;
+  }
+  if(typeof XLSX === 'undefined'){
+    uploadStatus.textContent = 'No se pudo cargar la librería de lectura de Excel. Verifica tu conexión a internet e inténtalo de nuevo.';
+    uploadStatus.classList.add('err');
+    return;
+  }
+  uploadStatus.textContent = 'Procesando...';
+  btn.disabled = true;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    // pequeño retraso para permitir que el navegador pinte "Procesando..."
+    // antes de iniciar el trabajo de lectura/parseo del archivo
+    setTimeout(()=> procesarArrayBuffer(e.target.result), 30);
+  };
+  reader.onerror = ()=>{
+    uploadStatus.textContent = 'No se pudo leer el archivo.';
+    uploadStatus.classList.add('err');
+    btn.disabled = false;
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+/* ---------- guardar HTML actualizado (para compartir) ----------
+   Genera una copia completa y autónoma de este mismo tablero, con los
+   datos actualmente cargados incrustados, para poder descargarla y
+   compartirla. Al abrirla, ya mostrará las tareas cargadas sin
+   necesidad de volver a subir el Excel. */
+function generarHtmlActualizado(){
+  let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const dataJson = JSON.stringify(currentData);
+  html = html.replace('let currentData = [];', 'let currentData = ' + dataJson + ';');
+  const fechaRef = lastLoadedAt || new Date();
+  // OJO: 'setLastUpdated(null);' aparece dos veces en el outerHTML: una vez
+  // como texto literal dentro de esta misma función (el argumento de este
+  // replace) y otra vez en la llamada real de inicio al final del script.
+  // .replace() con un string solo sustituye la PRIMERA coincidencia, que es
+  // la de dentro de esta función (no la que realmente importa). Anclamos el
+  // patrón a su contexto único (justo después de renderAgenda();) para que
+  // solo se sustituya la llamada de inicio real.
+  html = html.replace('renderAgenda();\nsetLastUpdated(null);', 'renderAgenda();\nsetLastUpdated(new Date(' + JSON.stringify(fechaRef.toISOString()) + '));');
+  return html;
+}
+
+document.getElementById('btnGuardar').addEventListener('click', ()=>{
+  if(currentData.length === 0){
+    uploadStatus.textContent = 'Primero carga un archivo para poder guardar.';
+    uploadStatus.className = 'upload-status err';
+    return;
+  }
+  try{
+    const htmlOut = generarHtmlActualizado();
+    const blob = new Blob([htmlOut], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const fechaRef = lastLoadedAt || new Date();
+    const nombreFecha = `${String(fechaRef.getDate()).padStart(2,'0')}-${MESES_ABR_ES[fechaRef.getMonth()]}-${fechaRef.getFullYear()}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Dashboard_Tareas_Laboral_${nombreFecha}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    uploadStatus.textContent = 'HTML actualizado descargado. Ya lo puedes compartir.';
+    uploadStatus.className = 'upload-status ok';
+  }catch(err){
+    uploadStatus.textContent = 'No se pudo generar el archivo para guardar: ' + err.message;
+    uploadStatus.className = 'upload-status err';
+  }
+});
+
+/* ============================================================
+   SINCRONIZACIÓN AUTOMÁTICA CON EL EXCEL EN SHAREPOINT/ONEDRIVE
+   ============================================================
+   Completa estos 4 valores siguiendo la guía paso a paso. Con eso,
+   el botón "Conectar con Microsoft 365" pedirá el login corporativo
+   una sola vez y, desde ahí, el dashboard se refresca solo cada
+   REFRESH_MINUTES minutos llamando a Microsoft Graph. Reutiliza
+   exactamente el mismo procesarArrayBuffer() que usa la carga manual.
+   ============================================================ */
+/* ¡IMPORTANTE! Los 4 valores de abajo son los del dashboard VIEJO
+   (Dashboard2, archivo "2026 CUADRO DE TAREAS LABORAL V2.xlsx" en el
+   OneDrive de consulta@garciamaya.co). Para esta página nueva se creará
+   un registro de aplicación NUEVO en Azure AD (no se reutiliza el actual)
+   y el archivo fuente también es otro, así que los 4 valores deben
+   reemplazarse. Ver "Paso 2" (Azure) y "Paso 3" (driveId/itemId) de la
+   guía de despliegue. */
+const GRAPH_CONFIG = {
+  clientId:  'PENDIENTE-REEMPLAZAR-CON-EL-CLIENT-ID-DE-LA-APP-NUEVA',   // Paso 2 de la guía
+  tenantId:  'PENDIENTE-REEMPLAZAR-CON-EL-TENANT-ID-DE-LA-APP-NUEVA',   // Paso 2 de la guía
+  driveId:   'PENDIENTE-REEMPLAZAR-CON-EL-DRIVE-ID-DEL-ARCHIVO-NUEVO',   // Paso 3 de la guía
+  itemId:    'PENDIENTE-REEMPLAZAR-CON-EL-ITEM-ID-DEL-ARCHIVO-NUEVO',    // Paso 3 de la guía
+  refreshMinutes: 30
+};
+
+let msalInstance = null;
+let graphAccount = null;
+
+async function initMsal(){
+
+ 
+
+if(typeof msal === 'undefined') return;
+
+ 
+
+msalInstance = new msal.PublicClientApplication({
+
+auth:{
+
+clientId: GRAPH_CONFIG.clientId,
+
+authority:
+
+'https://login.microsoftonline.com/' +
+
+GRAPH_CONFIG.tenantId,
+
+ 
+
+redirectUri: "https://PENDIENTE-URL-DE-GITHUB-PAGES-NUEVA/"
+
+},
+
+ 
+
+cache:{
+
+cacheLocation:"localStorage"
+
+}
+
+});
+
+ 
+
+await msalInstance.initialize();
+
+ 
+
+const cuentas = msalInstance.getAllAccounts();
+
+ 
+
+if(cuentas.length > 0){
+
+ 
+
+graphAccount = cuentas[0];
+
+ 
+
+await sincronizarDesdeGraph();
+
+ 
+
+programarRefrescoAutomatico();
+
+ 
+
+setGraphStatus(
+
+'Conectado como ' +
+
+graphAccount.username,
+
+false
+
+);
+
+}
+
+}
+function setGraphStatus(msg, esError){
+  const el = document.getElementById('graphStatus');
+  if(!el) return;
+  el.textContent = msg;
+  el.className = 'upload-status' + (esError ? ' err' : ' ok');
+}
+
+function programarRefrescoAutomatico(){
+  if(window._autoRefreshStarted) return;
+  window._autoRefreshStarted = true;
+  setInterval(sincronizarDesdeGraph, GRAPH_CONFIG.refreshMinutes * 60 * 1000);
+}
+
+async function iniciarSesionYSincronizar(){
+  const btn = document.getElementById('btnConectar');
+  try{
+    if(btn) btn.disabled = true;
+    setGraphStatus('Conectando con Microsoft 365...', false);
+    const loginResp = await msalInstance.loginPopup({ scopes:['Files.Read'] });
+    graphAccount = loginResp.account;
+    await sincronizarDesdeGraph();
+    programarRefrescoAutomatico();
+  }catch(err){
+    setGraphStatus('Error al conectar: ' + err.message, true);
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
+async function obtenerTokenSilencioso(){
+  const req = { scopes:['Files.Read'], account: graphAccount };
+  try{
+    const r = await msalInstance.acquireTokenSilent(req);
+    return r.accessToken;
+  }catch(e){
+    const r = await msalInstance.acquireTokenPopup(req);
+    return r.accessToken;
+  }
+}
+
+async function sincronizarDesdeGraph(){
+  try{
+    const token = await obtenerTokenSilencioso();
+    const url = `https://graph.microsoft.com/v1.0/drives/${GRAPH_CONFIG.driveId}/items/${GRAPH_CONFIG.itemId}/content`;
+    const fileResp = await fetch(url, { headers:{ Authorization: 'Bearer ' + token } });
+    if(!fileResp.ok) throw new Error('No se pudo descargar el Excel (revisa driveId/itemId y permisos).');
+    const arrayBuffer = await fileResp.arrayBuffer();
+    procesarArrayBuffer(arrayBuffer);
+    setGraphStatus('Conectado. Última sincronización automática: ' + fmtDateTime(new Date()) + '.', false);
+  }catch(err){
+    setGraphStatus('Error al sincronizar: ' + err.message, true);
+    console.error(err);
+  }
+}
+
+const _btnConectar = document.getElementById('btnConectar');
+if(_btnConectar) _btnConectar.addEventListener('click', iniciarSesionYSincronizar);
+window.addEventListener("load", async () => {
+
+await initMsal();
+
+});
+
+/* ---------- inicio ----------
+   Sin llamadas a servicios externos ni datos precargados: el tablero
+   arranca vacío y solo se llena cuando el usuario carga su archivo. */
+rebuildAllFilterOptions();
+render();
+buildAgendaIndex();
+populateAgendaResponsableOptions();
+renderAgenda();
+setLastUpdated(null);
+</script>
+</body>
+</html>
