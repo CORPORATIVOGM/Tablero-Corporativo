@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard de Tareas Laboral</title>
+<title>Tablero Corporativo</title>
 <style>
   :root{
     --gris:#808284;
@@ -327,7 +327,7 @@
 <body>
 
 <header>
-  <h1>Dashboard de Tareas Laboral</h1>
+  <h1>Tablero Corporativo</h1>
   <div class="sub">Visualización de todas las tareas de "2026 CUADRO DE TAREAS CORPORATIVO.xlsx" (incluye cerradas y vencidas) · Los datos se actualizan únicamente con el archivo que cargues abajo</div>
 </header>
 
@@ -1404,11 +1404,11 @@ document.getElementById('btnGuardar').addEventListener('click', ()=>{
    reemplazarse. Ver "Paso 2" (Azure) y "Paso 3" (driveId/itemId) de la
    guía de despliegue. */
 const GRAPH_CONFIG = {
-  clientId:  'PENDIENTE-REEMPLAZAR-CON-EL-CLIENT-ID-DE-LA-APP-NUEVA',   // Paso 2 de la guía
-  tenantId:  'PENDIENTE-REEMPLAZAR-CON-EL-TENANT-ID-DE-LA-APP-NUEVA',   // Paso 2 de la guía
-  driveId:   'PENDIENTE-REEMPLAZAR-CON-EL-DRIVE-ID-DEL-ARCHIVO-NUEVO',   // Paso 3 de la guía
-  itemId:    'PENDIENTE-REEMPLAZAR-CON-EL-ITEM-ID-DEL-ARCHIVO-NUEVO',    // Paso 3 de la guía
-  refreshMinutes: 30
+clientId: "0d587dde-5c31-4da9-89c4-1806a3e50ebd",
+tenantId: "d50355d0-b0a9-4c85-8711-cf8966cbb72f",
+driveId: "b!aXR-6MoSHUuKrM8XP9K97MpBkgc5TY9Gv8VLykjUv_7EKnOTOJNUSaLBL80J3D8R",
+itemId: "01J7D653WIQDDR3XQ4ANG3QU4H4YOMXNTV",
+refreshMinutes: 60
 };
 
 let msalInstance = null;
@@ -1436,7 +1436,7 @@ GRAPH_CONFIG.tenantId,
 
  
 
-redirectUri: "https://PENDIENTE-URL-DE-GITHUB-PAGES-NUEVA/"
+redirectUri: "https://corporativogm.github.io/Tablero-Corporativo/"
 
 },
 
