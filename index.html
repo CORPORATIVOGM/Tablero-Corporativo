@@ -729,7 +729,27 @@ function renderMultiSelectOptions(key){
     });
   }
   paint(searchInput.value);
-  searchInput.oninput = ()=>paint(searchInput.value);
+  let debounceTimer;
+
+ 
+
+searchInput.oninput = () => {
+
+ 
+
+clearTimeout(debounceTimer);
+
+ 
+
+debounceTimer = setTimeout(()=>{
+
+paint(searchInput.value);
+
+},250);
+
+ 
+
+};
 
   updateButtonLabel(key);
 }
@@ -739,7 +759,7 @@ function rebuildAllFilterOptions(){
 }
 
 function onFiltersChanged(){
-  rebuildAllFilterOptions();
+  
   render();
 }
 
@@ -900,7 +920,9 @@ function renderResumenCliente(filtered){
   const entries = Array.from(map.entries())
     .map(([name,o])=>({name, venc:o.venc, pend:o.pend, susp:o.susp, total:o.venc+o.pend+o.susp}))
     .filter(e=>e.total > 0)
-    .sort((a,b)=>b.total-a.total);
+    .sort((a,b)=>b.total-a.total)
+
+.slice(0,20);
 
   resumenClienteEl.innerHTML = '';
   if(entries.length === 0){
@@ -935,13 +957,31 @@ function renderResumenCliente(filtered){
 }
 
 function renderTabla(filtered){
-  const rows = filtered.slice().sort((a,b)=>{
-    const da = a[sortKey] || '9999-99-99';
-    const db = b[sortKey] || '9999-99-99';
-    if(da < db) return sortAsc ? -1 : 1;
-    if(da > db) return sortAsc ? 1 : -1;
-    return 0;
-  });
+  const allRows = filtered.slice().sort((a,b)=>{
+
+const da = a[sortKey] || '9999-99-99';
+
+const db = b[sortKey] || '9999-99-99';
+
+ 
+
+if(da < db) return sortAsc ? -1 : 1;
+
+if(da > db) return sortAsc ? 1 : -1;
+
+return 0;
+
+});
+
+ 
+
+const start = (currentPage - 1) * PAGE_SIZE;
+
+const end = start + PAGE_SIZE;
+
+ 
+
+const rows = allRows.slice(start,end);
   tablaBody.innerHTML = '';
   if(rows.length === 0){
     tablaBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--gris); padding:24px 12px;">
@@ -965,7 +1005,9 @@ function renderTabla(filtered){
     });
     tablaBody.appendChild(frag);
   }
-  rowCountEl.textContent = `${rows.length} tarea(s) listada(s)`;
+  rowCountEl.textContent =
+
+`Mostrando ${rows.length} de ${allRows.length} tareas`;
   arrowIngreso.textContent = sortKey === 'f' ? (sortAsc ? '▲' : '▼') : '';
   arrowCompromiso.textContent = sortKey === 'fc' ? (sortAsc ? '▲' : '▼') : '';
 }
