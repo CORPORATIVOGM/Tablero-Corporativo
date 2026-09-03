@@ -1533,8 +1533,40 @@ async function sincronizarDesdeGraph(){
   try{
     const token = await obtenerTokenSilencioso();
     const url = `https://graph.microsoft.com/v1.0/drives/${GRAPH_CONFIG.driveId}/items/${GRAPH_CONFIG.itemId}/content`;
-    const fileResp = await fetch(url, { headers:{ Authorization: 'Bearer ' + token } });
-    if(!fileResp.ok) throw new Error('No se pudo descargar el Excel (revisa driveId/itemId y permisos).');
+    const fileResp = await fetch(url, {
+
+headers:{ Authorization: 'Bearer ' + token }
+
+});
+
+ 
+
+console.log("URL:", url);
+
+console.log("STATUS:", fileResp.status);
+
+ 
+
+if(!fileResp.ok){
+
+ 
+
+const detalle = await fileResp.text();
+
+ 
+
+console.log("DETALLE GRAPH:");
+
+console.log(detalle);
+
+ 
+throw new Error(
+
+'HTTP ' + fileResp.status + ' - ' + detalle
+
+);
+
+}
     const arrayBuffer = await fileResp.arrayBuffer();
     procesarArrayBuffer(arrayBuffer);
     setGraphStatus('Conectado. Última sincronización automática: ' + fmtDateTime(new Date()) + '.', false);
