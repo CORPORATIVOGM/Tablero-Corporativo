@@ -574,6 +574,9 @@
    (incluidas cerradas y vencidas); solo se descartan filas sin CLIENTE.
    ========================================================== */
 let currentData = [];
+let currentPage = 1;      // faltaba declarar: usada por renderTabla() para paginar la tabla
+const PAGE_SIZE = 5000;   // sin controles de "Anterior/Siguiente" en el HTML, se deja alto
+                           // para mostrar todas las tareas (la tabla ya tiene scroll propio)
 
 /* ---------- estado de la Agenda ---------- */
 let agendaResponsable = '';  // abogado responsable seleccionado en la Agenda
