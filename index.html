@@ -1577,9 +1577,12 @@ async function obtenerTokenSilencioso(){
 async function sincronizarDesdeGraph(){
   try{
     const token = await obtenerTokenSilencioso();
-    const url =
-
-"https://graph.microsoft.com/v1.0/me/drive/items/01J7D653WIQDDR3XQ4ANG3QU4H4YOMXNTV/content";
+    // Se usa /drives/{driveId}/items/{itemId} (no /me/drive/items/{itemId}) para que
+    // funcione sin importar con qué cuenta se inicie sesión, siempre que esa cuenta
+    // tenga permiso de lectura sobre el archivo. /me/drive/items/{itemId} solo busca
+    // en el OneDrive PROPIO de quien inicia sesión, por eso fallaba con "itemNotFound"
+    // al conectar con un correo distinto al dueño original del archivo.
+    const url = `https://graph.microsoft.com/v1.0/drives/${GRAPH_CONFIG.driveId}/items/${GRAPH_CONFIG.itemId}/content`;
     const fileResp = await fetch(url, {
 
 headers:{ Authorization: 'Bearer ' + token }
